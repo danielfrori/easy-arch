@@ -269,21 +269,21 @@ fi
 info_print "Configuring ZRAM."
 cat > /mnt/etc/systemd/zram-generator.conf <<EOF
 [zram0]
-zram-size = min(ram, 8192)
+zram-size = min(ram, 4096)
 EOF
 
 # Pacman eye-candy features.
 info_print "Enabling colours, animations and the multilib repository for pacman."
 sed -Ei 's/^#(Color)$/\1\nILoveCandy/;s/^#(ParallelDownloads).*/\1 = 10/' /mnt/etc/pacman.conf
-# shellcheck disable=SC2260
-echo -e "\n[multilib]\nInclude = /etc/pacman.d/mirrorlist" &>/dev/null | tee -a /mnt/etc/pacman.conf
+sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf
 
 # Enabling Reflector
 info_print "Enabling Reflector."
 systemctl enable reflector.timer --root=/mnt &>/dev/null
 
 info_print "Installing KDE Plasma with Firefox (again, it may take a while)"
-pacstrap -K /mnt qt6-multimedia-ffmpeg pipewire-jack noto-fonts plasma konsole firefox
+pacstrap -K /mnt qt6-multimedia-ffmpeg pipewire-jack noto-fonts plasma konsole firefox &>/dev/null
+systemctl enable sddm.service --root=/mnt &>/dev/null
 
 # Finishing up.
 info_print "Done, you may now wish to reboot (further changes can be done by chrooting into /mnt)."
