@@ -225,23 +225,29 @@ info_print "Configuring the system (timezone, system clock, initramfs, GRUB)."
 arch-chroot /mnt /bin/bash -e <<EOF
 
     # Setting up timezone.
+    echo "Setting up timezone..."
     ln -sf /usr/share/zoneinfo/$(curl -s http://ip-api.com/line?fields=timezone) /etc/localtime &>/dev/null
 
     # Setting up clock.
+    echo "Setting up clock..."
     hwclock --systohc
 
     # Generating locales.
+    echo "Generating locales..."
     locale-gen &>/dev/null
 
     # Generating a new initramfs.
+    echo "Generating a new initramfs..."
     mkinitcpio -P &>/dev/null
 
     # Installing GRUB.
+    echo "Installing GRUB..."
     grub-install --target=x86_64-efi --efi-directory=/boot/ --bootloader-id=GRUB &>/dev/null
 
     # Creating grub config file.
     grub-mkconfig -o /boot/grub/grub.cfg &>/dev/null
     
+    echo "Running efibootmgr..."
     efibootmgr &>/dev/null
 
 EOF
@@ -259,10 +265,18 @@ if [[ -n "$username" ]]; then
     echo "$username:$userpass" | arch-chroot /mnt chpasswd
 fi
 
+# ZRAM configuration.
+info_print "Configuring ZRAM."
+cat > /mnt/etc/systemd/zram-generator.conf <<EOF
+[zram0]
+zram-size = min(ram, 8192)
+EOF
+
 # Pacman eye-candy features.
 info_print "Enabling colours, animations, and parallel downloads for pacman."
 sed -Ei 's/^#(Color)$/\1\nILoveCandy/;s/^#(ParallelDownloads).*/\1 = 10/' /mnt/etc/pacman.conf
 
+# Enabling Reflector
 info_print "Enabling Reflector."
 systemctl enable reflector.timer --root=/mnt &>/dev/null
 
